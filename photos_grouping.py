@@ -16,9 +16,9 @@ def LoadDirectoriesMenu():
                     return images_paths
                 else:
                     print("Type Y or N.")
-            break
         else:
             print("Typed path is wrong or is not a directory. Try again")
+
 def LoadDirectory(inp, recursive, images_paths):
     if recursive:
         for root, _, files in os.walk(inp):
@@ -30,6 +30,45 @@ def LoadDirectory(inp, recursive, images_paths):
             if file.endswith(supported_extensions):
                 images_paths.append(os.path.join(inp, file))
     return images_paths
+
+def FindDirIndex(element, matrix):
+    for i in range(len(matrix)):
+        if element in matrix[i]:
+            return i
+
+def FindSimilarImages(threshold, ceiling = 1):
+    similar_images = []
+    for image in processed_images:
+        if image[0] > threshold:
+            if image[0] <= ceiling:
+                similar_images.append(image)
+        else:
+            return similar_images
+    return similar_images
+
+def FirstDivision(threshold):
+    similar_images = FindSimilarImages(threshold)
+    splitted_directories = []
+    for i in range(len(images_paths)):
+        img = images_paths[i]
+        for _, image_id1, image_id2 in similar_images:
+            if i == image_id1:
+                img2 = images_paths[image_id2]
+            elif img == image_id2:
+                img2 = images_paths[image_id1]
+            else:
+                continue
+            if any(img in directory for directory in splitted_directories):
+                index = FindDirIndex(img, splitted_directories)
+                if not(img2 in splitted_directories[index]):
+                    splitted_directories[index].append(img2)
+            elif any(img2 in directory for directory in splitted_directories):
+                index = FindDirIndex(img2, splitted_directories)
+                if not(img in splitted_directories[index]):
+                    splitted_directories[index].append(img)
+            else:
+                splitted_directories.append([img, img2])
+    return splitted_directories
 
 # Load the OpenAI CLIP Model
 print('Loading CLIP Model...')
@@ -56,18 +95,6 @@ encoded_images = model.encode([Image.open(filepath) for filepath in images_paths
 # Compare images aganist all other images and return a list sorted by the pairs that have the highest cosine similarity score
 processed_images = util.paraphrase_mining_embeddings(encoded_images)
 
-# Threshold 0 - 1 (Higher -> more similar)
-print('Finding similar images...') 
-threshold = 0.9
-similar_images = []
-for image in processed_images:
-    if image[0] > threshold:
-        similar_images.append(image)
-    else:
-        break
-
-for score, image_id1, image_id2 in similar_images:
-    print("\nScore: {:.3f}%".format(score * 100))
-    print(images_paths[image_id1])
-    print(images_paths[image_id2])
-    
+splitted_directories = FirstDivision(threshold=0.9)
+for directory in splitted_directories:
+    print(directory)
