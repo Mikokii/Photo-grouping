@@ -135,6 +135,14 @@ def MergeSimilarDirectories(threshold, splitted_directories):
                 break
     return splitted_directories
 
+def AddNotUsedImages(splitted_directories):
+    splitted_directories.append([])
+    for img in images_paths:
+        if not(any(img in dir for dir in splitted_directories)):
+            splitted_directories[-1].append(img)
+    if splitted_directories[-1] == []:
+        splitted_directories.pop(-1)
+    return splitted_directories
 
 # Load the OpenAI CLIP Model
 print('Loading CLIP Model...')
@@ -166,5 +174,6 @@ splitted_directories = FirstDivision(first_threshold)
 second_threshold = 0.85
 splitted_directories = SecondDivision(second_threshold, splitted_directories)
 splitted_directories = MergeSimilarDirectories(second_threshold, splitted_directories)
+splitted_directories = AddNotUsedImages(splitted_directories)
 for directory in splitted_directories:
     print(directory)
