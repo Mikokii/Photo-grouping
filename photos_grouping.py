@@ -108,6 +108,34 @@ def SecondDivision(threshold, splitted_directories):
                     splitted_directories.append([img1, img2])
     return splitted_directories
 
+def MergeSimilarDirectories(threshold, splitted_directories):
+    similar_images = FindSimilarImages(threshold)
+    merged_status = True
+    while merged_status:
+        merged_status = False
+        for i in range(len(splitted_directories)):
+            dir1 = splitted_directories[i]
+            for j in range(i+1, len(splitted_directories)):
+                break_status = False
+                dir2 = splitted_directories[j]
+                for img1 in dir1:
+                    index1 = images_paths.index(img1)
+                    for img2 in dir2:
+                        index2 = images_paths.index(img2)
+                        if not(any(index1 in pair and index2 in pair for pair in similar_images)):
+                            break_status = True
+                            break
+                    if break_status == True:
+                        break
+                if not(break_status):
+                    merged_status = True
+                    splitted_directories[i].extend(splitted_directories.pop(j))
+                    break
+            if merged_status:
+                break
+    return splitted_directories
+
+
 # Load the OpenAI CLIP Model
 print('Loading CLIP Model...')
 model = SentenceTransformer('clip-ViT-B-32')
@@ -137,5 +165,6 @@ first_threshold = 0.9
 splitted_directories = FirstDivision(first_threshold)
 second_threshold = 0.85
 splitted_directories = SecondDivision(second_threshold, splitted_directories)
+splitted_directories = MergeSimilarDirectories(second_threshold, splitted_directories)
 for directory in splitted_directories:
     print(directory)
