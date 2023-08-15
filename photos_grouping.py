@@ -1,6 +1,7 @@
 from sentence_transformers import SentenceTransformer, util
 from PIL import Image
 import os
+
 def LoadDirectoriesMenu():
     images_paths = []
     while True:
@@ -22,13 +23,25 @@ def LoadDirectoriesMenu():
 def LoadDirectory(inp, recursive, images_paths):
     if recursive:
         for root, _, files in os.walk(inp):
+            if not(root in all_directories):
+                all_directories.append(root)
             for file in files:
                 if file.endswith(supported_extensions):
-                    images_paths.append(os.path.join(root, file))
+                    if not(os.path.join(root, file) in images_paths):
+                        images_paths.append(os.path.join(root, file))
     else:
-        for file in os.listdir(inp):
-            if file.endswith(supported_extensions):
-                images_paths.append(os.path.join(inp, file))
+        if not(inp in all_directories):
+            all_directories.append(inp)
+            for file in os.listdir(inp):
+                if file.endswith(supported_extensions):
+                    images_paths.append(os.path.join(inp, file))
+    return images_paths
+
+def DeleteDuplicates(images_paths):
+    for i in range(len(images_paths)):
+        for j in range(i+1, len(images_paths)):
+            if open(images_paths[i], "rb").read() == open(images_paths[j], "rb").read():
+                images_paths.pop(i)
     return images_paths
 
 def FindDirIndex(element, matrix):
@@ -36,7 +49,7 @@ def FindDirIndex(element, matrix):
         if element in matrix[i]:
             return i
 
-def FindSimilarImages(threshold, ceiling = 1):
+def FindSimilarImages(threshold, ceiling = 2):
     similar_images = []
     for image in processed_images:
         if image[0] > threshold:
@@ -151,6 +164,7 @@ model = SentenceTransformer('clip-ViT-B-32')
 exts = Image.registered_extensions()
 supported_extensions = tuple(ex for ex, f in exts.items() if f in Image.OPEN)
 
+all_directories = []
 while True:
     inp = input("Do you want to scan directories inside chosen directories recursively (Y or N)? ")
     if inp.lower() == 'y':
@@ -162,6 +176,7 @@ while True:
     else:
         print("Type Y or N.")
 images_paths = LoadDirectoriesMenu()
+images_paths = DeleteDuplicates(images_paths)
 
 # Compute the embeddings
 encoded_images = model.encode([Image.open(filepath) for filepath in images_paths], batch_size=128, convert_to_tensor=True, show_progress_bar=True)
