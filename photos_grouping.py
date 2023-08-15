@@ -54,7 +54,7 @@ def FirstDivision(threshold):
         for _, image_id1, image_id2 in similar_images:
             if i == image_id1:
                 img2 = images_paths[image_id2]
-            elif img == image_id2:
+            elif i == image_id2:
                 img2 = images_paths[image_id1]
             else:
                 continue
@@ -68,6 +68,44 @@ def FirstDivision(threshold):
                     splitted_directories[index].append(img)
             else:
                 splitted_directories.append([img, img2])
+    return splitted_directories
+
+def SecondDivision(threshold, splitted_directories):
+    ceiling = 0.9
+    similar_images = FindSimilarImages(threshold, ceiling)
+    not_used_images = []
+    for img in images_paths:
+        if not(any(img in directory for directory in splitted_directories)):
+            not_used_images.append(img)
+            img_index = images_paths.index(img)
+            for i in range(len(splitted_directories)):
+                break_status = True
+                directory = splitted_directories[i]
+                for el in directory:
+                    dir_image_index = images_paths.index(el)
+                    if not(any(img_index in pair and dir_image_index in pair for pair in similar_images)):
+                        break_status = False
+                        break
+                if break_status:
+                    splitted_directories[i].append(img)
+                    break
+            if break_status:
+                not_used_images.remove(img)
+    for i in range(len(not_used_images)):
+        img1 = not_used_images[i]
+        index1 = images_paths.index(img1)
+        for j in range(i+1, len(not_used_images)):
+            img2 = not_used_images[j]
+            index2 = images_paths.index(img2)
+            if any(index1 in pair and index2 in pair for pair in similar_images):
+                if (any(img1 in directory for directory in splitted_directories)):
+                    index = FindDirIndex(img1, splitted_directories)
+                    splitted_directories[index].append(img2)
+                elif (any(img2 in directory for directory in splitted_directories)):
+                    index = FindDirIndex(img2, splitted_directories)
+                    splitted_directories[index].append(img1)
+                else:
+                    splitted_directories.append([img1, img2])
     return splitted_directories
 
 # Load the OpenAI CLIP Model
@@ -95,6 +133,9 @@ encoded_images = model.encode([Image.open(filepath) for filepath in images_paths
 # Compare images aganist all other images and return a list sorted by the pairs that have the highest cosine similarity score
 processed_images = util.paraphrase_mining_embeddings(encoded_images)
 
-splitted_directories = FirstDivision(threshold=0.9)
+first_threshold = 0.9
+splitted_directories = FirstDivision(first_threshold)
+second_threshold = 0.85
+splitted_directories = SecondDivision(second_threshold, splitted_directories)
 for directory in splitted_directories:
     print(directory)
