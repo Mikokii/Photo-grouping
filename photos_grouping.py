@@ -1,6 +1,7 @@
 from sentence_transformers import SentenceTransformer, util
 from PIL import Image
 import os
+import shutil
 
 def LoadDirectoriesMenu():
     images_paths = []
@@ -155,6 +156,7 @@ def AddNotUsedImages(splitted_directories):
             splitted_directories[-1].append(img)
     if splitted_directories[-1] == []:
         splitted_directories.pop(-1)
+        return False
     return splitted_directories
 
 # Load the OpenAI CLIP Model
@@ -189,6 +191,34 @@ splitted_directories = FirstDivision(first_threshold)
 second_threshold = 0.85
 splitted_directories = SecondDivision(second_threshold, splitted_directories)
 splitted_directories = MergeSimilarDirectories(second_threshold, splitted_directories)
-splitted_directories = AddNotUsedImages(splitted_directories)
-for directory in splitted_directories:
-    print(directory)
+if not(AddNotUsedImages(splitted_directories)):
+    last_dir_status = False
+else:
+    last_dir_status = True
+print("{} images saved in {} direcotories".format(len(images_paths), len(splitted_directories)))
+while True:
+    print("Type path to directory in which you want to have directory with images:")
+    inp = input()
+    if os.path.isdir(inp):
+        parent_dir_path = inp
+        break
+    else:
+        print("Typed path is wrong or is not a directory. Try again")
+while True:
+    print("Type name of directory to save images:")
+    inp = input()
+    dir_path = os.path.join(parent_dir_path, inp)
+    if os.path.isdir(dir_path):
+        print("Directory with that name already exists. Choose another name for directory.")
+    else:
+        os.mkdir(dir_path)
+        break
+for i in range(len(splitted_directories)):
+    dir = splitted_directories[i]
+    if i == len(splitted_directories) - 1 and last_dir_status:
+        subdir_path = os.path.join(dir_path, "Other")
+    else:
+        subdir_path = os.path.join(dir_path, str(i+1))
+    os.mkdir(subdir_path)
+    for img in dir:
+        shutil.copy(img, subdir_path)
