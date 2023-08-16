@@ -2,7 +2,15 @@ from sentence_transformers import SentenceTransformer, util
 from PIL import Image
 import os
 import shutil
-
+def SelectRecursive():
+    while True:
+        inp = input("Do you want to scan directories inside chosen directories recursively (Y or N)? ")
+        if inp.lower() == 'y':
+            return True
+        elif inp.lower() == 'n':
+            return False
+        else:
+            print("Type Y or N.")
 def LoadDirectoriesMenu():
     images_paths = []
     while True:
@@ -13,14 +21,19 @@ def LoadDirectoriesMenu():
             while True:
                 inp = input("Do you want to load images from another directory (Y or N)? ")
                 if inp.lower() == 'y':
+                    print("If you want to cancel adding another path type \"C\"")
                     break
                 elif inp.lower() == 'n':
                     return images_paths
                 else:
                     print("Type Y or N.")
+        elif inp.lower() == "c":
+            if len(images_paths) == 0:
+                print("No images loaded. Type correct path.")
+            else:
+                return images_paths
         else:
             print("Typed path is wrong or is not a directory. Try again")
-
 def LoadDirectory(inp, recursive, images_paths):
     if recursive:
         for root, _, files in os.walk(inp):
@@ -37,19 +50,16 @@ def LoadDirectory(inp, recursive, images_paths):
                 if file.endswith(supported_extensions):
                     images_paths.append(os.path.join(inp, file))
     return images_paths
-
 def DeleteDuplicates(images_paths):
     for i in range(len(images_paths)):
         for j in range(i+1, len(images_paths)):
             if open(images_paths[i], "rb").read() == open(images_paths[j], "rb").read():
                 images_paths.pop(i)
     return images_paths
-
 def FindDirIndex(element, matrix):
     for i in range(len(matrix)):
         if element in matrix[i]:
             return i
-
 def FindSimilarImages(threshold, ceiling = 2):
     similar_images = []
     for image in processed_images:
@@ -59,7 +69,6 @@ def FindSimilarImages(threshold, ceiling = 2):
         else:
             return similar_images
     return similar_images
-
 def FirstDivision(threshold):
     similar_images = FindSimilarImages(threshold)
     splitted_directories = []
@@ -83,7 +92,6 @@ def FirstDivision(threshold):
             else:
                 splitted_directories.append([img, img2])
     return splitted_directories
-
 def SecondDivision(threshold, splitted_directories):
     ceiling = 0.9
     similar_images = FindSimilarImages(threshold, ceiling)
@@ -121,7 +129,6 @@ def SecondDivision(threshold, splitted_directories):
                 else:
                     splitted_directories.append([img1, img2])
     return splitted_directories
-
 def MergeSimilarDirectories(threshold, splitted_directories):
     similar_images = FindSimilarImages(threshold)
     merged_status = True
@@ -148,7 +155,6 @@ def MergeSimilarDirectories(threshold, splitted_directories):
             if merged_status:
                 break
     return splitted_directories
-
 def AddNotUsedImages(splitted_directories):
     splitted_directories.append([])
     for img in images_paths:
@@ -158,6 +164,64 @@ def AddNotUsedImages(splitted_directories):
         splitted_directories.pop(-1)
         return False
     return splitted_directories
+def SelectParentDirectory():
+    while True:
+        print("Type path to directory in which you want to have directory with images:")
+        inp = input()
+        if os.path.isdir(inp):
+            return inp
+        else:
+            print("Typed path is wrong or is not a directory. Try again")
+def SelectDirectoryName(parent_dir_path):
+    while True:
+        print("Type name of directory to save images:")
+        inp = input()
+        dir_path = os.path.join(parent_dir_path, inp)
+        if os.path.isdir(dir_path):
+            print("Directory with that name already exists. Choose another name for directory.")
+        else:
+            os.mkdir(dir_path)
+            return dir_path
+def CreateImagesDirectory(splitted_directories, dir_path):
+    for i in range(len(splitted_directories)):
+        dir = splitted_directories[i]
+        if i == len(splitted_directories) - 1 and last_dir_status:
+            subdir_path = os.path.join(dir_path, "Other")
+        else:
+            subdir_path = os.path.join(dir_path, str(i+1))
+        os.mkdir(subdir_path)
+        for img in dir:
+            shutil.copy(img, subdir_path)
+def SavingMenu(images_paths, all_directories, dir_path):
+    while True:
+        print("Images saved successfully")
+        inp = input("Check if you want to save changes (Y or N):")
+        if inp.lower() == "y":
+            while True:
+                inp = input("Do you want to delete images from the previous locations? (Y or N):")
+                if inp.lower() == "y":
+                    for img in images_paths:
+                        os.remove(img)
+                    for dir in reversed(all_directories):
+                        if len(os.listdir(dir)) == 0:
+                            os.rmdir(dir)
+                    print("Images succesfully deleted.")
+                    print("All done!")
+                    exit()
+                elif inp.lower() == "n":
+                    print("All done!")
+                    exit()
+                else:
+                    print("Type Y or N.")
+        elif inp.lower() == "n":
+            shutil.rmtree(dir_path)
+            print("Changes undone.")
+            break
+        else:
+            print("Type Y or N.")
+
+
+
 
 # Load the OpenAI CLIP Model
 print('Loading CLIP Model...')
@@ -167,16 +231,7 @@ exts = Image.registered_extensions()
 supported_extensions = tuple(ex for ex, f in exts.items() if f in Image.OPEN)
 
 all_directories = []
-while True:
-    inp = input("Do you want to scan directories inside chosen directories recursively (Y or N)? ")
-    if inp.lower() == 'y':
-        recursive = True
-        break
-    elif inp.lower() == 'n':
-        recursive = False
-        break
-    else:
-        print("Type Y or N.")
+recursive = SelectRecursive()
 images_paths = LoadDirectoriesMenu()
 images_paths = DeleteDuplicates(images_paths)
 
@@ -196,55 +251,7 @@ if not(AddNotUsedImages(splitted_directories)):
 else:
     last_dir_status = True
 print("{} images saved in {} direcotories".format(len(images_paths), len(splitted_directories)))
-while True:
-    print("Type path to directory in which you want to have directory with images:")
-    inp = input()
-    if os.path.isdir(inp):
-        parent_dir_path = inp
-        break
-    else:
-        print("Typed path is wrong or is not a directory. Try again")
-while True:
-    print("Type name of directory to save images:")
-    inp = input()
-    dir_path = os.path.join(parent_dir_path, inp)
-    if os.path.isdir(dir_path):
-        print("Directory with that name already exists. Choose another name for directory.")
-    else:
-        os.mkdir(dir_path)
-        break
-for i in range(len(splitted_directories)):
-    dir = splitted_directories[i]
-    if i == len(splitted_directories) - 1 and last_dir_status:
-        subdir_path = os.path.join(dir_path, "Other")
-    else:
-        subdir_path = os.path.join(dir_path, str(i+1))
-    os.mkdir(subdir_path)
-    for img in dir:
-        shutil.copy(img, subdir_path)
-while True:
-    print("Images saved successfully")
-    inp = input("Check if you want to save changes (Y or N):")
-    if inp.lower() == "y":
-        while True:
-            inp = input("Do you want to delete images from the previous locations? (Y or N):")
-            if inp.lower() == "y":
-                for img in images_paths:
-                    os.remove(img)
-                for dir in reversed(all_directories):
-                    if len(os.listdir(dir)) == 0:
-                        os.rmdir(dir)
-                print("Images succesfully deleted.")
-                print("All done!")
-                exit()
-            elif inp.lower() == "n":
-                print("All done!")
-                exit()
-            else:
-                print("Type Y or N.")
-    elif inp.lower() == "n":
-        shutil.rmtree(dir_path)
-        print("Changes undone.")
-        break
-    else:
-        print("Type Y or N.")
+parent_dir_path = SelectParentDirectory()
+dir_path = SelectDirectoryName(parent_dir_path)
+CreateImagesDirectory(splitted_directories, dir_path)
+SavingMenu(images_paths, all_directories, dir_path)
