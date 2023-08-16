@@ -96,6 +96,7 @@ def SecondDivision(threshold, splitted_directories):
     ceiling = 0.9
     similar_images = FindSimilarImages(threshold, ceiling)
     not_used_images = []
+    break_status = False
     for img in images_paths:
         if not(any(img in directory for directory in splitted_directories)):
             not_used_images.append(img)
