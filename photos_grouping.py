@@ -222,3 +222,29 @@ for i in range(len(splitted_directories)):
     os.mkdir(subdir_path)
     for img in dir:
         shutil.copy(img, subdir_path)
+while True:
+    print("Images saved successfully")
+    inp = input("Check if you want to save changes (Y or N):")
+    if inp.lower() == "y":
+        while True:
+            inp = input("Do you want to delete images from the previous locations? (Y or N):")
+            if inp.lower() == "y":
+                for img in images_paths:
+                    os.remove(img)
+                for dir in reversed(all_directories):
+                    if len(os.listdir(dir)) == 0:
+                        os.rmdir(dir)
+                print("Images succesfully deleted.")
+                print("All done!")
+                exit()
+            elif inp.lower() == "n":
+                print("All done!")
+                exit()
+            else:
+                print("Type Y or N.")
+    elif inp.lower() == "n":
+        shutil.rmtree(dir_path)
+        print("Changes undone.")
+        break
+    else:
+        print("Type Y or N.")
