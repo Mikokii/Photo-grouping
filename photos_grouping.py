@@ -208,10 +208,10 @@ def SavingMenu(images_paths, all_directories, dir_path):
                             os.rmdir(dir)
                     print("Images succesfully deleted.")
                     print("All done!")
-                    exit()
+                    break
                 elif inp.lower() == "n":
                     print("All done!")
-                    exit()
+                    break
                 else:
                     print("Type Y or N.")
         elif inp.lower() == "n":
@@ -220,6 +220,8 @@ def SavingMenu(images_paths, all_directories, dir_path):
             break
         else:
             print("Type Y or N.")
+            continue
+        break
 
 
 
