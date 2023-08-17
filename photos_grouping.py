@@ -224,7 +224,7 @@ def SavingMenu(images_paths, all_directories, dir_path):
         break
 
 
-
+os.system('cls')
 
 # Load the OpenAI CLIP Model
 print('Loading CLIP Model...')
