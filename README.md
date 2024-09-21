@@ -1,2 +1,2 @@
-# Photos-grouping
-Command-line based app used to manage photos by separating similar ones. It achieves that by using pretrained AI image embedding model: https://huggingface.co/sentence-transformers/clip-ViT-B-32 from SentenceTransformers library: https://sbert.net. App installs said AI model, analyze photos from given directory and seperates them into folders with the option of deleting them from the previous directory.
+# Photo-grouping
+Command-line based app used to manage photos by separating similar ones. It achieves that by using pretrained [AI image embedding model](https://huggingface.co/sentence-transformers/clip-ViT-B-32) from [SentenceTransformers library](https://sbert.net). App installs said AI model, analyze photos from given directory and seperates them into folders with the option of deleting them from the previous directory.
